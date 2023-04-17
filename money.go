@@ -6,12 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 )
 
 // Injection points for backward compatibility.
 // If you need to keep your JSON marshal/unmarshal way, overwrite them like below.
-//   money.UnmarshalJSON = func (m *Money, b []byte) error { ... }
-//   money.MarshalJSON = func (m Money) ([]byte, error) { ... }
+//
+//	money.UnmarshalJSON = func (m *Money, b []byte) error { ... }
+//	money.MarshalJSON = func (m Money) ([]byte, error) { ... }
 var (
 	// UnmarshalJSON is injection point of json.Unmarshaller for money.Money
 	UnmarshalJSON = defaultUnmarshalJSON
@@ -32,9 +35,9 @@ func defaultUnmarshalJSON(m *Money, b []byte) error {
 		return err
 	}
 
-	var amount float64
+	var amount string
 	if amountRaw, ok := data["amount"]; ok {
-		amount, ok = amountRaw.(float64)
+		amount, ok = amountRaw.(string)
 		if !ok {
 			return ErrInvalidJSONUnmarshal
 		}
@@ -49,10 +52,14 @@ func defaultUnmarshalJSON(m *Money, b []byte) error {
 	}
 
 	var ref *Money
-	if amount == 0 && currency == "" {
+	if amount == "" && currency == "" {
 		ref = &Money{}
 	} else {
-		ref = New(int64(amount), currency)
+		ref, err = NewFromString(amount, currency)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	*m = *ref
@@ -64,7 +71,7 @@ func defaultMarshalJSON(m Money) ([]byte, error) {
 		m = *New(0, "")
 	}
 
-	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": %d, "currency": "%s"}`, m.Amount(), m.Currency().Code))
+	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": "%s", "currency": "%s"}`, m.AmountFormatted(), m.Currency().Code))
 	return buff.Bytes(), nil
 }
 
@@ -87,10 +94,42 @@ func New(amount int64, code string) *Money {
 }
 
 // NewFromFloat creates and returns new instance of Money from a float64.
-// Always rounding trailing decimals down.
+// ONLY USE IN TESTS!!
 func NewFromFloat(amount float64, currency string) *Money {
 	currencyDecimals := math.Pow10(GetCurrency(currency).Fraction)
 	return New(int64(amount*currencyDecimals), currency)
+}
+
+// NewFromString creates and returns new instance of Money from a string.
+// Can only parse simple float-like strings, like "1.23" USD or "1,5" ARS, not "1.23 USD", "$1.23" or "1,000" USD.
+func NewFromString(amount string, currencyCode string) (*Money, error) {
+	currency := GetCurrency(currencyCode)
+	if currency == nil {
+		return nil, fmt.Errorf("invalid currency '%s'", currencyCode)
+	}
+
+	fraction := currency.Fraction
+
+	toParse := amount
+	var decimals int
+	if pointIndex := strings.Index(amount, currency.Decimal); pointIndex != -1 {
+		decimals = len(amount) - pointIndex - 1
+		if decimals > fraction {
+			decimals = fraction
+		}
+		toParse = amount[:pointIndex] + amount[pointIndex+1:pointIndex+1+decimals]
+	}
+
+	parsed, err := strconv.ParseInt(toParse, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid amount '%s'", amount)
+	}
+
+	for d := decimals; d < fraction; d++ {
+		parsed *= 10
+	}
+
+	return New(parsed, currencyCode), nil
 }
 
 // Currency returns the currency used by Money.
@@ -101,6 +140,11 @@ func (m *Money) Currency() *Currency {
 // Amount returns a copy of the internal monetary value as an int64.
 func (m *Money) Amount() int64 {
 	return m.amount
+}
+
+func (m *Money) AmountFormatted() string {
+	currency := m.currency.get()
+	return currency.Formatter().FormatAmount(m.amount)
 }
 
 // SameCurrency check if given Money is equals by currency.
@@ -329,9 +373,11 @@ func (m Money) MarshalJSON() ([]byte, error) {
 }
 
 // Compare function compares two money of the same type
-//  if m.amount > om.amount returns (1, nil)
-//  if m.amount == om.amount returns (0, nil
-//  if m.amount < om.amount returns (-1, nil)
+//
+//	if m.amount > om.amount returns (1, nil)
+//	if m.amount == om.amount returns (0, nil
+//	if m.amount < om.amount returns (-1, nil)
+//
 // If compare moneys from distinct currency, return (m.amount, ErrCurrencyMismatch)
 func (m *Money) Compare(om *Money) (int, error) {
 	if err := m.assertSameCurrency(om); err != nil {
