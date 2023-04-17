@@ -35,6 +35,49 @@ func defaultUnmarshalJSON(m *Money, b []byte) error {
 		return err
 	}
 
+	var amount float64
+	if amountRaw, ok := data["amount"]; ok {
+		amount, ok = amountRaw.(float64)
+		if !ok {
+			return ErrInvalidJSONUnmarshal
+		}
+	}
+
+	var currency string
+	if currencyRaw, ok := data["currency"]; ok {
+		currency, ok = currencyRaw.(string)
+		if !ok {
+			return ErrInvalidJSONUnmarshal
+		}
+	}
+
+	var ref *Money
+	if amount == 0 && currency == "" {
+		ref = &Money{}
+	} else {
+		ref = New(int64(amount), currency)
+	}
+
+	*m = *ref
+	return nil
+}
+
+func defaultMarshalJSON(m Money) ([]byte, error) {
+	if m == (Money{}) {
+		m = *New(0, "")
+	}
+
+	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": %d, "currency": "%s"}`, m.Amount(), m.Currency().Code))
+	return buff.Bytes(), nil
+}
+
+func CustomUnmarshalJSON(m *Money, b []byte) error {
+	data := make(map[string]interface{})
+	err := json.Unmarshal(b, &data)
+	if err != nil {
+		return err
+	}
+
 	var amount string
 	if amountRaw, ok := data["amount"]; ok {
 		amount, ok = amountRaw.(string)
@@ -66,7 +109,7 @@ func defaultUnmarshalJSON(m *Money, b []byte) error {
 	return nil
 }
 
-func defaultMarshalJSON(m Money) ([]byte, error) {
+func CustomMarshalJSON(m Money) ([]byte, error) {
 	if m == (Money{}) {
 		m = *New(0, "")
 	}
@@ -94,7 +137,16 @@ func New(amount int64, code string) *Money {
 }
 
 // NewFromFloat creates and returns new instance of Money from a float64.
-// ONLY USE IN TESTS!!
+// Always rounding trailing decimals down.
+//
+// Using NewFromFloat WILL CAUSE PRECISION ISSUES IN CERTAIN CASES!
+//
+// For example:
+//
+//	m := money.NewFromFloat(1.15, money.USD)
+//	fmt.Println(m.Amount())
+//
+// The above code will output 114 instead of 115.
 func NewFromFloat(amount float64, currency string) *Money {
 	currencyDecimals := math.Pow10(GetCurrency(currency).Fraction)
 	return New(int64(amount*currencyDecimals), currency)
