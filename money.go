@@ -17,9 +17,9 @@ import (
 //	money.MarshalJSON = func (m Money) ([]byte, error) { ... }
 var (
 	// UnmarshalJSON is injection point of json.Unmarshaller for money.Money
-	UnmarshalJSON = defaultUnmarshalJSON
+	UnmarshalJSON = customUnmarshalJSON
 	// MarshalJSON is injection point of json.Marshaller for money.Money
-	MarshalJSON = defaultMarshalJSON
+	MarshalJSON = customMarshalJSON
 
 	// ErrCurrencyMismatch happens when two compared Money don't have the same currency.
 	ErrCurrencyMismatch = errors.New("currencies don't match")
@@ -35,9 +35,9 @@ func defaultUnmarshalJSON(m *Money, b []byte) error {
 		return err
 	}
 
-	var amount string
+	var amount float64
 	if amountRaw, ok := data["amount"]; ok {
-		amount, ok = amountRaw.(string)
+		amount, ok = amountRaw.(float64)
 		if !ok {
 			return ErrInvalidJSONUnmarshal
 		}
@@ -52,14 +52,10 @@ func defaultUnmarshalJSON(m *Money, b []byte) error {
 	}
 
 	var ref *Money
-	if amount == "" && currency == "" {
+	if amount == 0 && currency == "" {
 		ref = &Money{}
 	} else {
-		ref, err = NewFromString(amount, currency)
-	}
-
-	if err != nil {
-		return err
+		ref = New(int64(amount), currency)
 	}
 
 	*m = *ref
@@ -71,7 +67,7 @@ func defaultMarshalJSON(m Money) ([]byte, error) {
 		m = *New(0, "")
 	}
 
-	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": "%s", "currency": "%s"}`, m.AmountFormatted(), m.Currency().Code))
+	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": %d, "currency": "%s"}`, m.Amount(), m.Currency().Code))
 	return buff.Bytes(), nil
 }
 
@@ -94,6 +90,15 @@ func New(amount int64, code string) *Money {
 }
 
 // NewFromFloat creates and returns new instance of Money from a float64.
+// There is a problem, we get when generating new Money from float number (amount is not set correctly
+// compared to the original value cause of the binary representation of the float numbers)
+//
+//		 -----------------  EXAMPLE --------------
+//		 amount := float64(18.99)
+//			cents := money.NewFromFloat(amount, money.USD)
+//
+//	 returns 1898 not 1899
+//
 // ONLY USE IN TESTS!!
 func NewFromFloat(amount float64, currency string) *Money {
 	currencyDecimals := math.Pow10(GetCurrency(currency).Fraction)
@@ -385,4 +390,51 @@ func (m *Money) Compare(om *Money) (int, error) {
 	}
 
 	return m.compare(om), nil
+}
+
+func customUnmarshalJSON(m *Money, b []byte) error {
+	data := make(map[string]interface{})
+	err := json.Unmarshal(b, &data)
+	if err != nil {
+		return err
+	}
+
+	var amount string
+	if amountRaw, ok := data["amount"]; ok {
+		amount, ok = amountRaw.(string)
+		if !ok {
+			return ErrInvalidJSONUnmarshal
+		}
+	}
+
+	var currency string
+	if currencyRaw, ok := data["currency"]; ok {
+		currency, ok = currencyRaw.(string)
+		if !ok {
+			return ErrInvalidJSONUnmarshal
+		}
+	}
+
+	var ref *Money
+	if amount == "" && currency == "" {
+		ref = &Money{}
+	} else {
+		ref, err = NewFromString(amount, currency)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	*m = *ref
+	return nil
+}
+
+func customMarshalJSON(m Money) ([]byte, error) {
+	if m == (Money{}) {
+		m = *New(0, "")
+	}
+
+	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": "%s", "currency": "%s"}`, m.AmountFormatted(), m.Currency().Code))
+	return buff.Bytes(), nil
 }

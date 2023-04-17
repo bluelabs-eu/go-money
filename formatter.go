@@ -55,7 +55,7 @@ func (f *Formatter) Format(amount int64) string {
 	return sa
 }
 
-// Format returns string of formatted integer using given currency template.
+// Format returns string representation of the amount.
 func (f *Formatter) FormatAmount(amount int64) string {
 	// Work with absolute amount value
 	sa := strconv.FormatInt(f.abs(amount), 10)
@@ -73,8 +73,6 @@ func (f *Formatter) FormatAmount(amount int64) string {
 	if f.Fraction > 0 {
 		sa = sa[:len(sa)-f.Fraction] + f.Decimal + sa[len(sa)-f.Fraction:]
 	}
-	// sa = strings.Replace(f.Template, "1", sa, 1)
-	// sa = strings.Replace(sa, "$", f.Grapheme, 1)
 
 	// Add minus sign for negative amount.
 	if amount < 0 {

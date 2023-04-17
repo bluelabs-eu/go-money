@@ -702,6 +702,17 @@ func TestNewFromString(t *testing.T) {
 	if err.Error() != "invalid amount 'invalid_input'" {
 		t.Error(err)
 	}
+
+	a, err := NewFromString("0", EUR)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if a.amount != 0 {
+		t.Errorf("Expected %d got %d", 0, m.amount)
+	}
+
 }
 
 func TestDefaultMarshal(t *testing.T) {
