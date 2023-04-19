@@ -64,12 +64,6 @@ func (f *Formatter) FormatAmount(amount int64) string {
 		sa = strings.Repeat("0", f.Fraction-len(sa)+1) + sa
 	}
 
-	if f.Thousand != "" {
-		for i := len(sa) - f.Fraction - 3; i > 0; i -= 3 {
-			sa = sa[:i] + f.Thousand + sa[i:]
-		}
-	}
-
 	if f.Fraction > 0 {
 		sa = sa[:len(sa)-f.Fraction] + f.Decimal + sa[len(sa)-f.Fraction:]
 	}
