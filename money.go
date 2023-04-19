@@ -117,7 +117,11 @@ func NewFromString(amount string, currencyCode string) (*Money, error) {
 
 	toParse := amount
 	var decimals int
-	if pointIndex := strings.Index(amount, currency.Decimal); pointIndex != -1 {
+	// There are some cases where decimal are interpreted with "," sign.
+	// since we are using decimal numbers like 1.2
+	// we are not gonna use currency decimal sign as provided from currency here.
+	// (To avoid changes in currencies itself and to still offer Format function)
+	if pointIndex := strings.Index(amount, "."); pointIndex != -1 {
 		decimals = len(amount) - pointIndex - 1
 		if decimals > fraction {
 			decimals = fraction
@@ -148,6 +152,12 @@ func (m *Money) Amount() int64 {
 }
 
 func (m *Money) AmountFormatted() string {
+
+	// func (m *Money) AmountFormatted() string {
+	//currency := m.currency.get()
+	//formatter := currency.Formatter()
+	//formatter.Thousand = ""
+
 	currency := m.currency.get()
 	return currency.Formatter().FormatAmount(m.amount)
 }
