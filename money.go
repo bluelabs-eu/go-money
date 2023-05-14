@@ -195,12 +195,6 @@ func (m *Money) Amount() int64 {
 }
 
 func (m *Money) AmountFormatted() string {
-
-	// func (m *Money) AmountFormatted() string {
-	//currency := m.currency.get()
-	//formatter := currency.Formatter()
-	//formatter.Thousand = ""
-
 	currency := m.currency.get()
 	return currency.Formatter().FormatAmount(m.amount)
 }
