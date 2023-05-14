@@ -717,7 +717,7 @@ func TestNewFromString(t *testing.T) {
 
 func TestDefaultMarshal(t *testing.T) {
 	given := New(12345, IQD)
-	expected := `{"amount":"12.345","currency":"IQD"}`
+	expected := `{"amount":12345,"currency":"IQD"}`
 
 	b, err := json.Marshal(given)
 
@@ -730,7 +730,7 @@ func TestDefaultMarshal(t *testing.T) {
 	}
 
 	given = &Money{}
-	expected = `{"amount":"0.00","currency":""}`
+	expected = `{"amount":0,"currency":""}`
 
 	b, err = json.Marshal(given)
 
@@ -763,7 +763,7 @@ func TestCustomMarshal(t *testing.T) {
 }
 
 func TestDefaultUnmarshal(t *testing.T) {
-	given := `{"amount": "100.12", "currency":"USD"}`
+	given := `{"amount": 10012, "currency":"USD"}`
 	expected := "$100.12"
 	var m Money
 	err := json.Unmarshal([]byte(given), &m)
@@ -775,16 +775,15 @@ func TestDefaultUnmarshal(t *testing.T) {
 		t.Errorf("Expected %s got %s", expected, m.Display())
 	}
 
-	given = `{"amount": "0", "currency":""}`
+	given = `{"amount": 0, "currency":""}`
 	err = json.Unmarshal([]byte(given), &m)
-
-	if err.Error() != errors.New("invalid currency ''").Error() {
-		t.Errorf("Got `%+v`, expected `invalid currency ''`", err)
+	if err != nil {
+		t.Error(err)
 	}
 
-	// if m != (Money{}) {
-	// 	t.Errorf("Expected zero value, got %+v", m)
-	// }
+	if m != (Money{}) {
+		t.Errorf("Expected zero value, got %+v", m)
+	}
 
 	given = `{}`
 	err = json.Unmarshal([]byte(given), &m)
@@ -798,17 +797,11 @@ func TestDefaultUnmarshal(t *testing.T) {
 
 	given = `{"amount": "foo", "currency": "USD"}`
 	err = json.Unmarshal([]byte(given), &m)
-	if err.Error() != errors.New("invalid amount 'foo'").Error() {
-		t.Errorf("Got `%+v`, expected `invalid amount 'foo'`", err)
-	}
-
-	given = `{"amount": 1234, "currency": "1234"}`
-	err = json.Unmarshal([]byte(given), &m)
 	if !errors.Is(err, ErrInvalidJSONUnmarshal) {
 		t.Errorf("Expected ErrInvalidJSONUnmarshal, got %+v", err)
 	}
 
-	given = `{"amount": "1234", "currency": 1234}`
+	given = `{"amount": 1234, "currency": 1234}`
 	err = json.Unmarshal([]byte(given), &m)
 	if !errors.Is(err, ErrInvalidJSONUnmarshal) {
 		t.Errorf("Expected ErrInvalidJSONUnmarshal, got %+v", err)
