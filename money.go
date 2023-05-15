@@ -114,7 +114,7 @@ func CustomMarshalJSON(m Money) ([]byte, error) {
 		m = *New(0, "")
 	}
 
-	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": %d, "currency": "%s"}`, m.Amount(), m.Currency().Code))
+	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": "%s", "currency": "%s"}`, m.AmountFormatted(), m.Currency().Code))
 	return buff.Bytes(), nil
 }
 
