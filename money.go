@@ -78,9 +78,9 @@ func CustomUnmarshalJSON(m *Money, b []byte) error {
 		return err
 	}
 
-	var amount float64
+	var amount string
 	if amountRaw, ok := data["amount"]; ok {
-		amount, ok = amountRaw.(float64)
+		amount, ok = amountRaw.(string)
 		if !ok {
 			return ErrInvalidJSONUnmarshal
 		}
@@ -95,10 +95,14 @@ func CustomUnmarshalJSON(m *Money, b []byte) error {
 	}
 
 	var ref *Money
-	if amount == 0 && currency == "" {
+	if amount == "" && currency == "" {
 		ref = &Money{}
 	} else {
-		ref = New(int64(amount), currency)
+		ref, err = NewFromString(amount, currency)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	*m = *ref
