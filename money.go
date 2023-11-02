@@ -153,7 +153,7 @@ func NewFromFloat(amount float64, currency string) *Money {
 }
 
 // NewFromString creates and returns new instance of Money from a string.
-// Can only parse simple float-like strings, like "1.23" USD or "1,5" ARS, not "1.23 USD", "$1.23" or "1,000" USD.
+// Can only parse simple float-like strings, like "1.23" USD or "1.5" ARS, not "1.23 USD", "$1.23" or "1.000" USD.
 func NewFromString(amount string, currencyCode string) (*Money, error) {
 	currency := GetCurrency(currencyCode)
 	if currency == nil {
