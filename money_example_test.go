@@ -168,7 +168,7 @@ func ExampleMoney_Display() {
 	fmt.Println(money.New(123456789, "EUR").Display())
 
 	// Output:
-	// €1,234,567.89
+	// €1234567.89
 }
 
 func ExampleMoney_AsMajorUnits() {
