@@ -8,7 +8,7 @@ import (
 )
 
 func ExampleMoney() {
-	pound := money.New(100, "GBP")
+	pound, _ := money.New(100, "GBP")
 	twoPounds, err := pound.Add(pound)
 
 	if err != nil {
@@ -32,7 +32,7 @@ func ExampleMoney() {
 }
 
 func ExampleNew() {
-	pound := money.New(100, "GBP")
+	pound, _ := money.New(100, "GBP")
 
 	fmt.Println(pound.Display())
 
@@ -41,9 +41,9 @@ func ExampleNew() {
 }
 
 func ExampleMoney_comparisons() {
-	pound := money.New(100, "GBP")
-	twoPounds := money.New(200, "GBP")
-	twoEuros := money.New(200, "EUR")
+	pound, _ := money.New(100, "GBP")
+	twoPounds, _ := money.New(200, "GBP")
+	twoEuros, _ := money.New(200, "EUR")
 
 	gt, err := pound.GreaterThan(twoPounds)
 	fmt.Println(gt, err)
@@ -61,7 +61,7 @@ func ExampleMoney_comparisons() {
 }
 
 func ExampleMoney_IsZero() {
-	pound := money.New(100, "GBP")
+	pound, _ := money.New(100, "GBP")
 	fmt.Println(pound.IsZero())
 
 	// Output:
@@ -69,7 +69,7 @@ func ExampleMoney_IsZero() {
 }
 
 func ExampleMoney_IsPositive() {
-	pound := money.New(100, "GBP")
+	pound, _ := money.New(100, "GBP")
 	fmt.Println(pound.IsPositive())
 
 	// Output:
@@ -77,7 +77,7 @@ func ExampleMoney_IsPositive() {
 }
 
 func ExampleMoney_IsNegative() {
-	pound := money.New(100, "GBP")
+	pound, _ := money.New(100, "GBP")
 	fmt.Println(pound.IsNegative())
 
 	// Output:
@@ -85,8 +85,8 @@ func ExampleMoney_IsNegative() {
 }
 
 func ExampleMoney_Add() {
-	pound := money.New(100, "GBP")
-	twoPounds := money.New(200, "GBP")
+	pound, _ := money.New(100, "GBP")
+	twoPounds, _ := money.New(200, "GBP")
 
 	result, err := pound.Add(twoPounds)
 	fmt.Println(result.Display(), err)
@@ -96,8 +96,8 @@ func ExampleMoney_Add() {
 }
 
 func ExampleMoney_Subtract() {
-	pound := money.New(100, "GBP")
-	twoPounds := money.New(200, "GBP")
+	pound, _ := money.New(100, "GBP")
+	twoPounds, _ := money.New(200, "GBP")
 
 	result, err := pound.Subtract(twoPounds)
 	fmt.Println(result.Display(), err)
@@ -107,7 +107,7 @@ func ExampleMoney_Subtract() {
 }
 
 func ExampleMoney_Multiply() {
-	pound := money.New(100, "GBP")
+	pound, _ := money.New(100, "GBP")
 
 	result := pound.Multiply(2)
 	fmt.Println(result.Display())
@@ -117,7 +117,7 @@ func ExampleMoney_Multiply() {
 }
 
 func ExampleMoney_Absolute() {
-	pound := money.New(-100, "GBP")
+	pound, _ := money.New(-100, "GBP")
 
 	result := pound.Absolute()
 	fmt.Println(result.Display())
@@ -127,7 +127,7 @@ func ExampleMoney_Absolute() {
 }
 
 func ExampleMoney_Split() {
-	pound := money.New(100, "GBP")
+	pound, _ := money.New(100, "GBP")
 	parties, err := pound.Split(3)
 
 	if err != nil {
@@ -145,7 +145,7 @@ func ExampleMoney_Split() {
 }
 
 func ExampleMoney_Allocate() {
-	pound := money.New(100, "GBP")
+	pound, _ := money.New(100, "GBP")
 	// Allocate is variadic function which can receive ratios as
 	// slice (int[]{33, 33, 33}...) or separated by a comma integers
 	parties, err := pound.Allocate(33, 33, 33)
@@ -165,14 +165,16 @@ func ExampleMoney_Allocate() {
 }
 
 func ExampleMoney_Display() {
-	fmt.Println(money.New(123456789, "EUR").Display())
+	m, _ := money.New(123456789, "EUR")
+	fmt.Println(m.Display())
 
 	// Output:
 	// €1234567.89
 }
 
 func ExampleMoney_AsMajorUnits() {
-	result := money.New(123456789, "EUR").AsMajorUnits()
+	m, _ := money.New(123456789, "EUR")
+	result := m.AsMajorUnits()
 	fmt.Printf("%.2f", result)
 
 	// Output:
