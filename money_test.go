@@ -783,7 +783,7 @@ func TestDefaultUnmarshal(t *testing.T) {
 
 	given = `{"amount": 1234, "currency": 1234}`
 	err = json.Unmarshal([]byte(given), &m)
-	if !errors.Is(err, ErrInvalidJSONUnmarshal) {
+	if !errors.Is(err, ErrInvalidJSON) {
 		t.Errorf("Expected ErrInvalidJSONUnmarshal, got %+v", err)
 	}
 }
