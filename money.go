@@ -17,9 +17,9 @@ import (
 //	money.MarshalJSON = func (m Money) ([]byte, error) { ... }
 var (
 	// UnmarshalJSON is injection point of json.Unmarshaller for money.Money
-	UnmarshalJSON = defaultUnmarshalJSON
+	UnmarshalJSON = unmarshalJSON
 	// MarshalJSON is injection point of json.Marshaller for money.Money
-	MarshalJSON = defaultMarshalJSON
+	MarshalJSON = marshalJSON
 
 	// ErrCurrencyMismatch happens when two compared Money don't have the same currency.
 	ErrCurrencyMismatch = errors.New("currencies don't match")
@@ -28,54 +28,7 @@ var (
 	ErrInvalidJSONUnmarshal = errors.New("invalid json unmarshal")
 )
 
-func defaultUnmarshalJSON(m *Money, b []byte) error {
-	data := make(map[string]interface{})
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return err
-	}
-
-	var amount float64
-	if amountRaw, ok := data["amount"]; ok {
-		amount, ok = amountRaw.(float64)
-		if !ok {
-			return ErrInvalidJSONUnmarshal
-		}
-	}
-
-	var currency string
-	if currencyRaw, ok := data["currency"]; ok {
-		currency, ok = currencyRaw.(string)
-		if !ok {
-			return ErrInvalidJSONUnmarshal
-		}
-	}
-
-	var ref *Money
-	if amount == 0 && currency == "" {
-		ref = &Money{}
-	} else {
-		ref, err = New(int64(amount), currency)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	*m = *ref
-	return nil
-}
-
-func defaultMarshalJSON(m Money) ([]byte, error) {
-	if m == (Money{}) {
-		m = Money{0, newCurrency("").get()}
-	}
-
-	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": %d, "currency": "%s"}`, m.Amount(), m.Currency().Code))
-	return buff.Bytes(), nil
-}
-
-func CustomUnmarshalJSON(m *Money, b []byte) error {
+func unmarshalJSON(m *Money, b []byte) error {
 	data := make(map[string]interface{})
 	err := json.Unmarshal(b, &data)
 	if err != nil {
@@ -113,7 +66,7 @@ func CustomUnmarshalJSON(m *Money, b []byte) error {
 	return nil
 }
 
-func CustomMarshalJSON(m Money) ([]byte, error) {
+func marshalJSON(m Money) ([]byte, error) {
 	if m == (Money{}) {
 		m = Money{0, newCurrency("").get()}
 	}
