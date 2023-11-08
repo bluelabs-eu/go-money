@@ -17,61 +17,18 @@ import (
 //	money.MarshalJSON = func (m Money) ([]byte, error) { ... }
 var (
 	// UnmarshalJSON is injection point of json.Unmarshaller for money.Money
-	UnmarshalJSON = defaultUnmarshalJSON
+	UnmarshalJSON = unmarshalJSON
 	// MarshalJSON is injection point of json.Marshaller for money.Money
-	MarshalJSON = defaultMarshalJSON
+	MarshalJSON = marshalJSON
 
 	// ErrCurrencyMismatch happens when two compared Money don't have the same currency.
 	ErrCurrencyMismatch = errors.New("currencies don't match")
 
-	// ErrInvalidJSONUnmarshal happens when the default money.UnmarshalJSON fails to unmarshal Money because of invalid data.
-	ErrInvalidJSONUnmarshal = errors.New("invalid json unmarshal")
+	// ErrInvalidJSON happens when the default money.UnmarshalJSON fails to unmarshal Money because of invalid data.
+	ErrInvalidJSON = errors.New("invalid json")
 )
 
-func defaultUnmarshalJSON(m *Money, b []byte) error {
-	data := make(map[string]interface{})
-	err := json.Unmarshal(b, &data)
-	if err != nil {
-		return err
-	}
-
-	var amount float64
-	if amountRaw, ok := data["amount"]; ok {
-		amount, ok = amountRaw.(float64)
-		if !ok {
-			return ErrInvalidJSONUnmarshal
-		}
-	}
-
-	var currency string
-	if currencyRaw, ok := data["currency"]; ok {
-		currency, ok = currencyRaw.(string)
-		if !ok {
-			return ErrInvalidJSONUnmarshal
-		}
-	}
-
-	var ref *Money
-	if amount == 0 && currency == "" {
-		ref = &Money{}
-	} else {
-		ref = New(int64(amount), currency)
-	}
-
-	*m = *ref
-	return nil
-}
-
-func defaultMarshalJSON(m Money) ([]byte, error) {
-	if m == (Money{}) {
-		m = *New(0, "")
-	}
-
-	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": %d, "currency": "%s"}`, m.Amount(), m.Currency().Code))
-	return buff.Bytes(), nil
-}
-
-func CustomUnmarshalJSON(m *Money, b []byte) error {
+func unmarshalJSON(m *Money, b []byte) error {
 	data := make(map[string]interface{})
 	err := json.Unmarshal(b, &data)
 	if err != nil {
@@ -82,7 +39,7 @@ func CustomUnmarshalJSON(m *Money, b []byte) error {
 	if amountRaw, ok := data["amount"]; ok {
 		amount, ok = amountRaw.(string)
 		if !ok {
-			return ErrInvalidJSONUnmarshal
+			return ErrInvalidJSON
 		}
 	}
 
@@ -90,7 +47,7 @@ func CustomUnmarshalJSON(m *Money, b []byte) error {
 	if currencyRaw, ok := data["currency"]; ok {
 		currency, ok = currencyRaw.(string)
 		if !ok {
-			return ErrInvalidJSONUnmarshal
+			return ErrInvalidJSON
 		}
 	}
 
@@ -109,9 +66,9 @@ func CustomUnmarshalJSON(m *Money, b []byte) error {
 	return nil
 }
 
-func CustomMarshalJSON(m Money) ([]byte, error) {
+func marshalJSON(m Money) ([]byte, error) {
 	if m == (Money{}) {
-		m = *New(0, "")
+		m = Money{0, newCurrency("").get()}
 	}
 
 	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": "%s", "currency": "%s"}`, m.AmountFormatted(), m.Currency().Code))
@@ -129,11 +86,16 @@ type Money struct {
 }
 
 // New creates and returns new instance of Money.
-func New(amount int64, code string) *Money {
+func New(amount int64, currencyCode string) (*Money, error) {
+	currency := GetCurrency(currencyCode)
+	if currency == nil {
+		return nil, fmt.Errorf("invalid currency '%s'", currencyCode)
+	}
+
 	return &Money{
 		amount:   amount,
-		currency: newCurrency(code).get(),
-	}
+		currency: currency,
+	}, nil
 }
 
 // NewFromFloat creates and returns new instance of Money from a float64.
@@ -147,9 +109,17 @@ func New(amount int64, code string) *Money {
 //	fmt.Println(m.Amount())
 //
 // The above code will output 114 instead of 115.
-func NewFromFloat(amount float64, currency string) *Money {
-	currencyDecimals := math.Pow10(GetCurrency(currency).Fraction)
-	return New(int64(amount*currencyDecimals), currency)
+func NewFromFloat(amount float64, currencyCode string) (*Money, error) {
+	currency := GetCurrency(currencyCode)
+	if currency == nil {
+		return nil, fmt.Errorf("invalid currency '%s'", currencyCode)
+	}
+	currencyDecimals := math.Pow10(currency.Fraction)
+
+	return &Money{
+		amount:   int64(amount * currencyDecimals),
+		currency: currency,
+	}, nil
 }
 
 // NewFromString creates and returns new instance of Money from a string.
@@ -181,7 +151,10 @@ func NewFromString(amount string, currencyCode string) (*Money, error) {
 		parsed *= 10
 	}
 
-	return New(parsed, currencyCode), nil
+	return &Money{
+		amount:   parsed,
+		currency: currency,
+	}, nil
 }
 
 // Currency returns the currency used by Money.
