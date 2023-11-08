@@ -25,7 +25,7 @@ var (
 	ErrCurrencyMismatch = errors.New("currencies don't match")
 
 	// ErrInvalidJSON happens when the default money.UnmarshalJSON fails to unmarshal Money because of invalid data.
-	ErrInvalidJSON = errors.New("invalid json unmarshal")
+	ErrInvalidJSON = errors.New("invalid json")
 )
 
 func unmarshalJSON(m *Money, b []byte) error {
