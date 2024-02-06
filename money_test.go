@@ -32,11 +32,14 @@ func TestCurrency(t *testing.T) {
 	decimals := 5
 	AddCurrency(code, "M$", "1 $", ".", ",", decimals)
 	m, _ := New(1, code)
-	c := m.Currency().Code
+
+	currency := GetCurrency(m.CurrencyCode())
+
+	c := currency.Code
 	if c != code {
 		t.Errorf("Expected %s got %s", code, c)
 	}
-	f := m.Currency().Fraction
+	f := currency.Fraction
 	if f != decimals {
 		t.Errorf("Expected %d got %d", decimals, f)
 	}
@@ -303,7 +306,7 @@ func TestMoney_Add(t *testing.T) {
 			t.Error(err)
 		}
 
-		if r.Amount() != tc.expected {
+		if r.AmountUnformatted() != tc.expected {
 			t.Errorf("Expected %d + %d = %d got %d", tc.amount1, tc.amount2,
 				tc.expected, r.amount)
 		}
@@ -641,16 +644,16 @@ func TestMoney_Comparison(t *testing.T) {
 func TestMoney_Currency(t *testing.T) {
 	pound, _ := New(100, GBP)
 
-	if pound.Currency().Code != GBP {
-		t.Errorf("Expected %s got %s", GBP, pound.Currency().Code)
+	if pound.CurrencyCode() != GBP {
+		t.Errorf("Expected %s got %s", GBP, pound.CurrencyCode())
 	}
 }
 
 func TestMoney_Amount(t *testing.T) {
 	pound, _ := New(100, GBP)
 
-	if pound.Amount() != 100 {
-		t.Errorf("Expected %d got %d", 100, pound.Amount())
+	if pound.AmountUnformatted() != 100 {
+		t.Errorf("Expected %d got %d", 100, pound.AmountUnformatted())
 	}
 }
 
@@ -735,8 +738,11 @@ func TestDefaultMarshal(t *testing.T) {
 func TestCustomMarshal(t *testing.T) {
 	given, _ := New(12345, IQD)
 	expected := `{"amount":12345,"currency_code":"IQD","currency_fraction":3}`
+
 	MarshalJSON = func(m Money) ([]byte, error) {
-		buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": %d, "currency_code": "%s", "currency_fraction": %d}`, m.Amount(), m.Currency().Code, m.Currency().Fraction))
+		currency := GetCurrency(m.CurrencyCode())
+
+		buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": %d, "currency_code": "%s", "currency_fraction": %d}`, m.AmountUnformatted(), currency.Code, currency.Fraction))
 		return buff.Bytes(), nil
 	}
 

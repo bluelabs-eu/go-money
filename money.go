@@ -71,7 +71,7 @@ func marshalJSON(m Money) ([]byte, error) {
 		m = Money{0, newCurrency("").get()}
 	}
 
-	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": "%s", "currency": "%s"}`, m.AmountFormatted(), m.Currency().Code))
+	buff := bytes.NewBufferString(fmt.Sprintf(`{"amount": "%s", "currency": "%s"}`, m.Amount(), m.CurrencyCode()))
 	return buff.Bytes(), nil
 }
 
@@ -158,16 +158,16 @@ func NewFromString(amount string, currencyCode string) (*Money, error) {
 }
 
 // Currency returns the currency used by Money.
-func (m *Money) Currency() *Currency {
-	return m.currency
+func (m *Money) CurrencyCode() string {
+	return m.currency.Code
 }
 
-// Amount returns a copy of the internal monetary value as an int64.
-func (m *Money) Amount() int64 {
+// AmountUnformatted returns a copy of the internal monetary value as an int64.
+func (m *Money) AmountUnformatted() int64 {
 	return m.amount
 }
 
-func (m *Money) AmountFormatted() string {
+func (m *Money) Amount() string {
 	currency := m.currency.get()
 	return currency.Formatter().FormatAmount(m.amount)
 }
